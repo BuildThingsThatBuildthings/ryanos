@@ -47,24 +47,13 @@ export const useAuthStore = create<AuthState & AuthActions>()(
           if (error) throw error;
           if (!data.session) throw new Error('No session created');
 
-          // Get user profile from users table
-          const { data: userProfile, error: profileError } = await supabase
-            .from('users')
-            .select('*')
-            .eq('id', data.user.id)
-            .single();
-
-          if (profileError && profileError.code !== 'PGRST116') {
-            console.warn('Failed to fetch user profile:', profileError);
-          }
-
           const user: User = {
             id: data.user.id,
             email: data.user.email!,
-            name: userProfile?.name || data.user.user_metadata?.name || 'User',
-            avatar: userProfile?.avatar || data.user.user_metadata?.avatar_url,
-            createdAt: userProfile?.created_at || data.user.created_at,
-            updatedAt: userProfile?.updated_at || data.user.updated_at || data.user.created_at,
+            name: data.user.user_metadata?.name || 'User',
+            avatar: data.user.user_metadata?.avatar_url,
+            createdAt: data.user.created_at,
+            updatedAt: data.user.updated_at || data.user.created_at,
           };
 
           set({
@@ -99,19 +88,7 @@ export const useAuthStore = create<AuthState & AuthActions>()(
           if (error) throw error;
           if (!data.user) throw new Error('Registration failed');
 
-          // Create user profile in users table
-          const { error: profileError } = await supabase
-            .from('users')
-            .insert({
-              id: data.user.id,
-              email: data.user.email!,
-              name: userData.name,
-            });
-
-          if (profileError) {
-            console.warn('Failed to create user profile:', profileError);
-          }
-
+          // User profile will be created automatically by database trigger
           set({ isLoading: false });
 
           // Note: User will need to verify email before session is created
@@ -219,24 +196,13 @@ export const useAuthStore = create<AuthState & AuthActions>()(
           if (error) throw error;
 
           if (session?.user) {
-            // Get user profile from users table
-            const { data: userProfile, error: profileError } = await supabase
-              .from('users')
-              .select('*')
-              .eq('id', session.user.id)
-              .single();
-
-            if (profileError && profileError.code !== 'PGRST116') {
-              console.warn('Failed to fetch user profile:', profileError);
-            }
-
             const user: User = {
               id: session.user.id,
               email: session.user.email!,
-              name: userProfile?.name || session.user.user_metadata?.name || 'User',
-              avatar: userProfile?.avatar || session.user.user_metadata?.avatar_url,
-              createdAt: userProfile?.created_at || session.user.created_at,
-              updatedAt: userProfile?.updated_at || session.user.updated_at || session.user.created_at,
+              name: session.user.user_metadata?.name || 'User',
+              avatar: session.user.user_metadata?.avatar_url,
+              createdAt: session.user.created_at,
+              updatedAt: session.user.updated_at || session.user.created_at,
             };
 
             set({
