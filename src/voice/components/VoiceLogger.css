@@ -1,0 +1,502 @@
+/* VoiceLogger Component Styles */
+
+.voice-logger {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 16px;
+  padding: 24px;
+  color: white;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  max-width: 600px;
+  margin: 0 auto;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+}
+
+.voice-logger.disabled {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+/* Header Controls */
+.voice-logger__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  gap: 16px;
+}
+
+.voice-logger__mode-controls {
+  display: flex;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 4px;
+  gap: 4px;
+}
+
+.mode-toggle {
+  background: transparent;
+  border: none;
+  color: white;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.mode-toggle:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.mode-toggle.active {
+  background: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.voice-logger__provider-select select {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  color: white;
+  padding: 8px 12px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.voice-logger__provider-select select:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.voice-logger__provider-select select option {
+  background: #2a2a2a;
+  color: white;
+}
+
+/* Main Input Area */
+.voice-logger__input-area {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.voice-logger__mic-button {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: linear-gradient(145deg, #ff6b6b, #ee5a24);
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 8px 24px rgba(238, 90, 36, 0.4);
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  margin: 0 auto 16px;
+}
+
+.voice-logger__mic-button:hover {
+  transform: scale(1.05);
+  box-shadow: 0 12px 32px rgba(238, 90, 36, 0.5);
+}
+
+.voice-logger__mic-button:active {
+  transform: scale(0.95);
+}
+
+.voice-logger__mic-button.listening {
+  background: linear-gradient(145deg, #2ed573, #1e90ff);
+  box-shadow: 0 8px 24px rgba(46, 213, 115, 0.4);
+  animation: pulse 1.5s infinite;
+}
+
+.voice-logger__mic-button.processing {
+  background: linear-gradient(145deg, #ffa502, #ff6348);
+  animation: spin 1s linear infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.mic-icon {
+  font-size: 48px;
+  line-height: 1;
+}
+
+.volume-indicator {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.volume-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #2ed573, #ffa502, #ff6b6b);
+  transition: width 0.1s ease;
+  border-radius: 2px;
+}
+
+/* Status Indicators */
+.voice-logger__status {
+  height: 32px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.status-indicator {
+  padding: 6px 12px;
+  border-radius: 16px;
+  font-size: 14px;
+  font-weight: 500;
+  text-align: center;
+  min-width: 100px;
+}
+
+.status-indicator.listening {
+  background: rgba(46, 213, 115, 0.2);
+  border: 1px solid rgba(46, 213, 115, 0.4);
+}
+
+.status-indicator.processing {
+  background: rgba(255, 165, 2, 0.2);
+  border: 1px solid rgba(255, 165, 2, 0.4);
+}
+
+.status-indicator.error {
+  background: rgba(255, 107, 107, 0.2);
+  border: 1px solid rgba(255, 107, 107, 0.4);
+}
+
+/* Transcript Display */
+.voice-logger__transcript {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 20px;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.transcript-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.transcript-controls {
+  display: flex;
+  gap: 8px;
+}
+
+.transcript-controls button {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  color: white;
+  padding: 4px 8px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.2s ease;
+}
+
+.transcript-controls button:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.transcript-content {
+  min-height: 60px;
+}
+
+.current-transcript {
+  margin-bottom: 12px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  border-left: 3px solid #ffa502;
+}
+
+.transcript-text {
+  display: block;
+  margin-bottom: 8px;
+  font-style: italic;
+  opacity: 0.9;
+}
+
+.confidence-bar {
+  position: relative;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.confidence-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ff6b6b, #ffa502, #2ed573);
+  transition: width 0.3s ease;
+  border-radius: 3px;
+}
+
+.confidence-text {
+  position: absolute;
+  top: -20px;
+  right: 0;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.final-transcript {
+  padding: 12px;
+  background: rgba(46, 213, 115, 0.1);
+  border-radius: 8px;
+  border-left: 3px solid #2ed573;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.confidence-badge {
+  background: rgba(46, 213, 115, 0.2);
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* Recent Intents */
+.voice-logger__recent-intents {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.recent-intents-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.undo-btn {
+  background: rgba(255, 107, 107, 0.2);
+  border: 1px solid rgba(255, 107, 107, 0.4);
+  border-radius: 6px;
+  color: white;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.2s ease;
+}
+
+.undo-btn:hover {
+  background: rgba(255, 107, 107, 0.3);
+}
+
+.recent-intents-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.intent-item {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 12px;
+  border-left: 3px solid #667eea;
+  transition: all 0.2s ease;
+}
+
+.intent-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.intent-item.log_set {
+  border-left-color: #2ed573;
+}
+
+.intent-item.start_workout {
+  border-left-color: #ffa502;
+}
+
+.intent-item.edit_last {
+  border-left-color: #3742fa;
+}
+
+.intent-item.undo_last {
+  border-left-color: #ff6b6b;
+}
+
+.intent-item.rest_timer {
+  border-left-color: #5f27cd;
+}
+
+.intent-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.intent-name {
+  font-weight: 600;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.intent-confidence {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 2px 6px;
+  border-radius: 8px;
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.intent-details {
+  font-size: 14px;
+  opacity: 0.8;
+  font-style: italic;
+}
+
+/* Instructions */
+.voice-logger__instructions {
+  text-align: center;
+  font-size: 14px;
+  opacity: 0.8;
+  margin-top: 16px;
+}
+
+.voice-logger__instructions p {
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .voice-logger {
+    padding: 16px;
+    margin: 16px;
+  }
+  
+  .voice-logger__header {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .voice-logger__mic-button {
+    width: 100px;
+    height: 100px;
+  }
+  
+  .mic-icon {
+    font-size: 40px;
+  }
+  
+  .transcript-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .recent-intents-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .voice-logger {
+    margin: 8px;
+    padding: 12px;
+  }
+  
+  .voice-logger__mic-button {
+    width: 80px;
+    height: 80px;
+  }
+  
+  .mic-icon {
+    font-size: 32px;
+  }
+  
+  .mode-toggle {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .voice-logger__mic-button.listening {
+    animation: none;
+  }
+  
+  .voice-logger__mic-button.processing {
+    animation: none;
+  }
+  
+  * {
+    transition: none !important;
+  }
+}
+
+/* Focus states for keyboard navigation */
+.voice-logger button:focus {
+  outline: 2px solid rgba(255, 255, 255, 0.5);
+  outline-offset: 2px;
+}
+
+.voice-logger select:focus {
+  outline: 2px solid rgba(255, 255, 255, 0.5);
+  outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .voice-logger {
+    border: 2px solid white;
+  }
+  
+  .mode-toggle.active {
+    background: white;
+    color: black;
+  }
+  
+  .status-indicator {
+    border-width: 2px;
+  }
+}

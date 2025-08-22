@@ -1,0 +1,835 @@
+{
+  "info": {
+    "name": "Fitness Tracking API",
+    "description": "Comprehensive fitness tracking API with voice integration and AI-powered workouts",
+    "version": "1.0.0",
+    "_postman_id": "fitness-api-collection",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000/api",
+      "type": "string"
+    },
+    {
+      "key": "authToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "userId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "workoutId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "exerciseId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "voiceSessionId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{authToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Register User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    pm.environment.set('authToken', response.data.token);",
+                  "    pm.environment.set('userId', response.data.user.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"John Doe\",\n  \"email\": \"john.doe@example.com\",\n  \"password\": \"securePassword123\",\n  \"confirmPassword\": \"securePassword123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "register"]
+            },
+            "description": "Register a new user account"
+          }
+        },
+        {
+          "name": "Login User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    pm.environment.set('authToken', response.data.token);",
+                  "    pm.environment.set('userId', response.data.user.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"john.doe@example.com\",\n  \"password\": \"securePassword123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            },
+            "description": "Authenticate user and receive JWT token"
+          }
+        },
+        {
+          "name": "Get User Profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "profile"]
+            },
+            "description": "Get current user's profile information"
+          }
+        },
+        {
+          "name": "Update User Profile",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"John Updated Doe\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "profile"]
+            },
+            "description": "Update current user's profile information"
+          }
+        },
+        {
+          "name": "Change Password",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currentPassword\": \"securePassword123\",\n  \"newPassword\": \"newSecurePassword123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/password",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "password"]
+            },
+            "description": "Change user's password"
+          }
+        },
+        {
+          "name": "Refresh Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    pm.environment.set('authToken', response.data.token);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/refresh",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "refresh"]
+            },
+            "description": "Get a new access token using refresh token"
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/logout",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "logout"]
+            },
+            "description": "Logout and invalidate current session"
+          }
+        }
+      ],
+      "description": "User authentication endpoints"
+    },
+    {
+      "name": "Workouts",
+      "item": [
+        {
+          "name": "Get Workouts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/workouts?page=1&limit=20&status=completed",
+              "host": ["{{baseUrl}}"],
+              "path": ["workouts"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "status",
+                  "value": "completed"
+                }
+              ]
+            },
+            "description": "Get user's workouts with pagination and filtering"
+          }
+        },
+        {
+          "name": "Create Workout",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    pm.environment.set('workoutId', response.data.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Push Day\",\n  \"description\": \"Chest, shoulders, and triceps workout\",\n  \"date\": \"2024-01-15\",\n  \"exerciseIds\": [\"exercise_bench_press\", \"exercise_shoulder_press\"]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/workouts",
+              "host": ["{{baseUrl}}"],
+              "path": ["workouts"]
+            },
+            "description": "Create a new workout"
+          }
+        },
+        {
+          "name": "Get Workout by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/workouts/{{workoutId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["workouts", "{{workoutId}}"]
+            },
+            "description": "Get a specific workout by ID"
+          }
+        },
+        {
+          "name": "Update Workout",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Push Day\",\n  \"status\": \"completed\",\n  \"notes\": \"Great workout, felt strong\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/workouts/{{workoutId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["workouts", "{{workoutId}}"]
+            },
+            "description": "Update an existing workout"
+          }
+        },
+        {
+          "name": "Add Set to Workout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"exerciseId\": \"exercise_bench_press\",\n  \"setNumber\": 1,\n  \"reps\": 8,\n  \"weight\": 135,\n  \"rpe\": 7,\n  \"notes\": \"Felt good, controlled movement\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/workouts/{{workoutId}}/sets",
+              "host": ["{{baseUrl}}"],
+              "path": ["workouts", "{{workoutId}}", "sets"]
+            },
+            "description": "Add a new set to an existing workout"
+          }
+        },
+        {
+          "name": "Get Workout Templates",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/workouts/templates",
+              "host": ["{{baseUrl}}"],
+              "path": ["workouts", "templates"]
+            },
+            "description": "Get user's workout templates"
+          }
+        },
+        {
+          "name": "Create Workout Template",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Upper Body Template\",\n  \"description\": \"Standard upper body workout template\",\n  \"exerciseIds\": [\"exercise_bench_press\", \"exercise_shoulder_press\", \"exercise_rows\"]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/workouts/templates",
+              "host": ["{{baseUrl}}"],
+              "path": ["workouts", "templates"]
+            },
+            "description": "Create a new workout template"
+          }
+        },
+        {
+          "name": "Generate AI Workout",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    pm.environment.set('workoutId', response.data.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"prompt\": \"Create a 45-minute upper body strength workout for intermediate level\",\n  \"preferences\": {\n    \"duration\": 45,\n    \"equipment\": [\"barbell\", \"dumbbell\"],\n    \"targetMuscles\": [\"chest\", \"shoulders\", \"triceps\"],\n    \"level\": \"intermediate\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/workouts/generate",
+              "host": ["{{baseUrl}}"],
+              "path": ["workouts", "generate"]
+            },
+            "description": "Generate an AI-powered workout based on prompt and preferences"
+          }
+        }
+      ],
+      "description": "Workout management endpoints"
+    },
+    {
+      "name": "Exercises",
+      "item": [
+        {
+          "name": "Get Exercises",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.data.data && response.data.data.length > 0) {",
+                  "        pm.environment.set('exerciseId', response.data.data[0].id);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/exercises?page=1&limit=20&category=strength&muscle=chest",
+              "host": ["{{baseUrl}}"],
+              "path": ["exercises"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "category",
+                  "value": "strength"
+                },
+                {
+                  "key": "muscle",
+                  "value": "chest"
+                }
+              ]
+            },
+            "description": "Get exercises with filtering and pagination"
+          }
+        },
+        {
+          "name": "Get Exercise by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/exercises/{{exerciseId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["exercises", "{{exerciseId}}"]
+            },
+            "description": "Get a specific exercise by ID"
+          }
+        },
+        {
+          "name": "Search Exercises",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/exercises/search?q=bench press",
+              "host": ["{{baseUrl}}"],
+              "path": ["exercises", "search"],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "bench press"
+                }
+              ]
+            },
+            "description": "Search exercises by name or description"
+          }
+        },
+        {
+          "name": "Get Exercise Alternatives",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/exercises/{{exerciseId}}/alternatives",
+              "host": ["{{baseUrl}}"],
+              "path": ["exercises", "{{exerciseId}}", "alternatives"]
+            },
+            "description": "Get alternative exercises for a specific exercise"
+          }
+        },
+        {
+          "name": "Add Exercise to Favorites",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/exercises/{{exerciseId}}/favorite",
+              "host": ["{{baseUrl}}"],
+              "path": ["exercises", "{{exerciseId}}", "favorite"]
+            },
+            "description": "Add exercise to user's favorites"
+          }
+        },
+        {
+          "name": "Remove Exercise from Favorites",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/exercises/{{exerciseId}}/favorite",
+              "host": ["{{baseUrl}}"],
+              "path": ["exercises", "{{exerciseId}}", "favorite"]
+            },
+            "description": "Remove exercise from user's favorites"
+          }
+        },
+        {
+          "name": "Get User Favorites",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/exercises/favorites",
+              "host": ["{{baseUrl}}"],
+              "path": ["exercises", "favorites"]
+            },
+            "description": "Get user's favorite exercises"
+          }
+        }
+      ],
+      "description": "Exercise library endpoints"
+    },
+    {
+      "name": "Voice Integration",
+      "item": [
+        {
+          "name": "Create Voice Session",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    pm.environment.set('voiceSessionId', response.data.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workoutId\": \"{{workoutId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/voice/sessions",
+              "host": ["{{baseUrl}}"],
+              "path": ["voice", "sessions"]
+            },
+            "description": "Create a new voice session for workout logging"
+          }
+        },
+        {
+          "name": "Get Voice Sessions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/voice/sessions?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["voice", "sessions"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Get user's voice sessions"
+          }
+        },
+        {
+          "name": "Get Voice Session by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/voice/sessions/{{voiceSessionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["voice", "sessions", "{{voiceSessionId}}"]
+            },
+            "description": "Get a specific voice session"
+          }
+        },
+        {
+          "name": "Process Voice Audio",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sessionId\": \"{{voiceSessionId}}\",\n  \"audioData\": \"data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEA...\",\n  \"mimeType\": \"audio/wav\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/voice/process",
+              "host": ["{{baseUrl}}"],
+              "path": ["voice", "process"]
+            },
+            "description": "Process audio data and extract workout information"
+          }
+        },
+        {
+          "name": "Extract Workout Data from Transcript",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"transcript\": \"I just completed 3 sets of bench press with 135 pounds for 8 reps each, followed by 2 sets of shoulder press with 25 pound dumbbells for 12 reps\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/voice/extract-workout",
+              "host": ["{{baseUrl}}"],
+              "path": ["voice", "extract-workout"]
+            },
+            "description": "Extract structured workout data from transcript"
+          }
+        },
+        {
+          "name": "Process Voice Command",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"command\": \"Start a new workout called Push Day\",\n  \"context\": {\n    \"currentWorkout\": null,\n    \"currentExercise\": null\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/voice/command",
+              "host": ["{{baseUrl}}"],
+              "path": ["voice", "command"]
+            },
+            "description": "Process and execute voice commands"
+          }
+        },
+        {
+          "name": "Get Voice Settings",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/voice/settings",
+              "host": ["{{baseUrl}}"],
+              "path": ["voice", "settings"]
+            },
+            "description": "Get user's voice settings"
+          }
+        },
+        {
+          "name": "Update Voice Settings",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"language\": \"en-US\",\n  \"voice\": \"alloy\",\n  \"speed\": 1.0,\n  \"autoDetect\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/voice/settings",
+              "host": ["{{baseUrl}}"],
+              "path": ["voice", "settings"]
+            },
+            "description": "Update user's voice settings"
+          }
+        }
+      ],
+      "description": "Voice integration endpoints"
+    },
+    {
+      "name": "Workout Sets",
+      "item": [
+        {
+          "name": "Update Set",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reps\": 10,\n  \"weight\": 140,\n  \"rpe\": 8,\n  \"completed\": true,\n  \"notes\": \"Increased weight, felt challenging\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/sets/set_123",
+              "host": ["{{baseUrl}}"],
+              "path": ["sets", "set_123"]
+            },
+            "description": "Update an existing workout set"
+          }
+        },
+        {
+          "name": "Delete Set",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/sets/set_123",
+              "host": ["{{baseUrl}}"],
+              "path": ["sets", "set_123"]
+            },
+            "description": "Delete a workout set"
+          }
+        }
+      ],
+      "description": "Workout set management endpoints"
+    },
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["health"]
+            },
+            "description": "Simple health check to verify API status"
+          }
+        }
+      ],
+      "description": "API health endpoints"
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Auto-set authorization header if token exists",
+          "const token = pm.environment.get('authToken');",
+          "if (token && !pm.request.auth) {",
+          "    pm.request.headers.add({",
+          "        key: 'Authorization',",
+          "        value: `Bearer ${token}`",
+          "    });",
+          "}"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Global test to check response format",
+          "pm.test('Response should have success field', function () {",
+          "    const response = pm.response.json();",
+          "    pm.expect(response).to.have.property('success');",
+          "});",
+          "",
+          "// Log response for debugging",
+          "if (pm.response.code >= 400) {",
+          "    console.log('Error Response:', pm.response.text());",
+          "}"
+        ]
+      }
+    }
+  ]
+}

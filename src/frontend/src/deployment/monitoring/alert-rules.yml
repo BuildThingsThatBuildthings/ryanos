@@ -1,0 +1,218 @@
+# Prometheus Alert Rules for Fitness Tracker
+
+groups:
+  - name: fitness-tracker-alerts
+    rules:
+      # High CPU usage
+      - alert: HighCpuUsage
+        expr: 100 - (avg by(instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+          service: system
+        annotations:
+          summary: "High CPU usage detected"
+          description: "CPU usage is above 80% on {{ $labels.instance }} for more than 5 minutes."
+
+      # High memory usage
+      - alert: HighMemoryUsage
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+          service: system
+        annotations:
+          summary: "High memory usage detected"
+          description: "Memory usage is above 85% on {{ $labels.instance }} for more than 5 minutes."
+
+      # Low disk space
+      - alert: LowDiskSpace
+        expr: (1 - (node_filesystem_avail_bytes / node_filesystem_size_bytes)) * 100 > 90
+        for: 10m
+        labels:
+          severity: critical
+          service: system
+        annotations:
+          summary: "Low disk space"
+          description: "Disk usage is above 90% on {{ $labels.instance }} mount {{ $labels.mountpoint }}."
+
+      # Application is down
+      - alert: ApplicationDown
+        expr: up{job="fitness-tracker-backend"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: application
+        annotations:
+          summary: "Fitness Tracker Backend is down"
+          description: "The backend service has been down for more than 1 minute."
+
+      # High response time
+      - alert: HighResponseTime
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job="fitness-tracker-backend"}[5m])) > 1
+        for: 5m
+        labels:
+          severity: warning
+          service: application
+        annotations:
+          summary: "High response time"
+          description: "95th percentile response time is above 1 second for more than 5 minutes."
+
+      # High error rate
+      - alert: HighErrorRate
+        expr: rate(http_requests_total{job="fitness-tracker-backend",status=~"5.."}[5m]) / rate(http_requests_total{job="fitness-tracker-backend"}[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: critical
+          service: application
+        annotations:
+          summary: "High error rate"
+          description: "Error rate is above 10% for more than 5 minutes."
+
+
+      # Pod CrashLooping
+      - alert: PodCrashLooping
+        expr: rate(kube_pod_container_status_restarts_total[15m]) > 0
+        for: 5m
+        labels:
+          severity: critical
+          service: kubernetes
+        annotations:
+          summary: "Pod is crash looping"
+          description: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} is crash looping."
+
+      # Deployment has no available replicas
+      - alert: DeploymentNoReplicas
+        expr: kube_deployment_status_replicas_available == 0
+        for: 5m
+        labels:
+          severity: critical
+          service: kubernetes
+        annotations:
+          summary: "Deployment has no available replicas"
+          description: "Deployment {{ $labels.deployment }} in namespace {{ $labels.namespace }} has no available replicas."
+
+      # PVC usage high
+      - alert: PVCUsageHigh
+        expr: (kubelet_volume_stats_used_bytes / kubelet_volume_stats_capacity_bytes) * 100 > 85
+        for: 10m
+        labels:
+          severity: warning
+          service: kubernetes
+        annotations:
+          summary: "PVC usage is high"
+          description: "PVC {{ $labels.persistentvolumeclaim }} usage is above 85%."
+
+      # SSL certificate expiring soon
+      - alert: SSLCertificateExpiringSoon
+        expr: probe_ssl_earliest_cert_expiry - time() < 86400 * 30
+        for: 1h
+        labels:
+          severity: warning
+          service: ssl
+        annotations:
+          summary: "SSL certificate expiring soon"
+          description: "SSL certificate for {{ $labels.instance }} will expire in less than 30 days."
+
+      # High number of failed login attempts
+      - alert: HighFailedLogins
+        expr: rate(auth_failed_login_attempts_total[5m]) > 10
+        for: 2m
+        labels:
+          severity: warning
+          service: security
+        annotations:
+          summary: "High number of failed login attempts"
+          description: "There have been more than 10 failed login attempts per second for 2 minutes."
+
+      # Backup job failed
+      - alert: BackupJobFailed
+        expr: kube_job_status_failed{job_name=~".*backup.*"} > 0
+        for: 1m
+        labels:
+          severity: critical
+          service: backup
+        annotations:
+          summary: "Backup job failed"
+          description: "Backup job {{ $labels.job_name }} has failed."
+
+      # No recent backup
+      - alert: NoRecentBackup
+        expr: time() - backup_last_success_timestamp > 86400
+        for: 1h
+        labels:
+          severity: critical
+          service: backup
+        annotations:
+          summary: "No recent backup"
+          description: "No successful backup in the last 24 hours."
+
+  - name: business-metrics
+    rules:
+      # High user registration rate
+      - alert: HighUserRegistrationRate
+        expr: rate(user_registrations_total[1h]) > 100
+        for: 5m
+        labels:
+          severity: info
+          service: business
+        annotations:
+          summary: "High user registration rate"
+          description: "User registration rate is unusually high: {{ $value }} registrations per hour."
+
+      # Low active users
+      - alert: LowActiveUsers
+        expr: active_users_24h < 50
+        for: 30m
+        labels:
+          severity: warning
+          service: business
+        annotations:
+          summary: "Low active user count"
+          description: "Active users in the last 24 hours: {{ $value }} (threshold: 50)."
+
+      # High API error rate by endpoint
+      - alert: HighAPIErrorRateByEndpoint
+        expr: rate(http_requests_total{status=~"5..",job="fitness-tracker-backend"}[5m]) by (handler) > 0.05
+        for: 3m
+        labels:
+          severity: warning
+          service: api
+        annotations:
+          summary: "High API error rate for endpoint"
+          description: "Endpoint {{ $labels.handler }} has error rate above 5%: {{ $value }}."
+
+  - name: security-alerts
+    rules:
+      # Suspicious activity patterns
+      - alert: SuspiciousActivityPattern
+        expr: rate(http_requests_total{status="401"}[5m]) > 5
+        for: 2m
+        labels:
+          severity: warning
+          service: security
+        annotations:
+          summary: "Suspicious activity pattern detected"
+          description: "High rate of 401 (Unauthorized) responses: {{ $value }} per second."
+
+      # SQL injection attempt
+      - alert: PotentialSQLInjection
+        expr: rate(suspicious_sql_patterns_total[5m]) > 0
+        for: 1m
+        labels:
+          severity: critical
+          service: security
+        annotations:
+          summary: "Potential SQL injection attempt"
+          description: "Suspicious SQL patterns detected in requests."
+
+      # Unusual data access patterns
+      - alert: UnusualDataAccess
+        expr: rate(database_queries_total[5m]) > 1000
+        for: 10m
+        labels:
+          severity: warning
+          service: security
+        annotations:
+          summary: "Unusual database access pattern"
+          description: "Database query rate is unusually high: {{ $value }} queries per second."

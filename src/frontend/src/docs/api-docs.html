@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fitness Tracking API Documentation</title>
+    <link rel="stylesheet" type="text/css" href="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui.css" />
+    <style>
+        html {
+            box-sizing: border-box;
+            overflow: -moz-scrollbars-vertical;
+            overflow-y: scroll;
+        }
+        
+        *,
+        *:before,
+        *:after {
+            box-sizing: inherit;
+        }
+
+        body {
+            margin: 0;
+            background: #fafafa;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem 0;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .header h1 {
+            margin: 0 0 0.5rem 0;
+            font-size: 2.5rem;
+            font-weight: 300;
+        }
+
+        .header p {
+            margin: 0;
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1rem;
+        }
+
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .feature-card {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            border-left: 4px solid #667eea;
+        }
+
+        .feature-card h3 {
+            margin: 0 0 1rem 0;
+            color: #333;
+            font-size: 1.25rem;
+        }
+
+        .feature-card p {
+            margin: 0;
+            color: #666;
+            line-height: 1.6;
+        }
+
+        .quick-start {
+            background: white;
+            border-radius: 8px;
+            padding: 2rem;
+            margin-bottom: 3rem;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .quick-start h2 {
+            margin: 0 0 1.5rem 0;
+            color: #333;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 0.5rem;
+        }
+
+        .auth-example {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            padding: 1rem;
+            margin: 1rem 0;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.875rem;
+            overflow-x: auto;
+        }
+
+        .code-block {
+            background: #2d3748;
+            color: #e2e8f0;
+            border-radius: 4px;
+            padding: 1rem;
+            margin: 1rem 0;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.875rem;
+            overflow-x: auto;
+        }
+
+        .code-block .comment {
+            color: #68d391;
+        }
+
+        .code-block .keyword {
+            color: #63b3ed;
+        }
+
+        .code-block .string {
+            color: #fbb6ce;
+        }
+
+        .endpoints-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 1rem;
+            margin: 2rem 0;
+        }
+
+        .endpoint-card {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .endpoint-card h4 {
+            margin: 0 0 1rem 0;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .method-badge {
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .method-get { background: #e6fffa; color: #234e52; }
+        .method-post { background: #f0fff4; color: #22543d; }
+        .method-patch { background: #fefcbf; color: #744210; }
+        .method-delete { background: #fed7d7; color: #742a2a; }
+
+        .download-links {
+            text-align: center;
+            margin: 2rem 0;
+        }
+
+        .download-btn {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 4px;
+            text-decoration: none;
+            margin: 0 0.5rem;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+
+        .download-btn:hover {
+            background: #5a67d8;
+            color: white;
+            text-decoration: none;
+        }
+
+        #swagger-ui {
+            margin-top: 2rem;
+        }
+
+        .swagger-ui .topbar {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .features {
+                grid-template-columns: 1fr;
+            }
+            
+            .endpoints-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="container">
+            <h1>Fitness Tracking API</h1>
+            <p>Comprehensive fitness tracking with voice integration and AI-powered workouts</p>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="features">
+            <div class="feature-card">
+                <h3>🏋️ Workout Management</h3>
+                <p>Create, track, and manage workouts with sets, reps, weights, and timing. Support for templates and recommendations.</p>
+            </div>
+            <div class="feature-card">
+                <h3>📚 Exercise Library</h3>
+                <p>Comprehensive exercise database with categories, muscle groups, equipment, and media support for instructions.</p>
+            </div>
+            <div class="feature-card">
+                <h3>🎤 Voice Integration</h3>
+                <p>Voice-powered workout logging with real-time transcription and intelligent data extraction.</p>
+            </div>
+            <div class="feature-card">
+                <h3>🤖 AI Workout Generation</h3>
+                <p>LLM-powered workout creation based on natural language prompts and user preferences.</p>
+            </div>
+            <div class="feature-card">
+                <h3>🔐 Secure Authentication</h3>
+                <p>JWT-based authentication with refresh tokens, password reset, and email verification.</p>
+            </div>
+            <div class="feature-card">
+                <h3>📱 Offline Support</h3>
+                <p>Built-in offline capabilities with sync queue for seamless mobile experience.</p>
+            </div>
+        </div>
+
+        <div class="quick-start">
+            <h2>Quick Start Guide</h2>
+            
+            <h3>1. Authentication</h3>
+            <p>All API endpoints (except authentication and health) require a valid JWT token:</p>
+            
+            <div class="code-block">
+<span class="comment"># Register a new user</span>
+curl -X POST https://api.fitnessapp.com/auth/register \
+  -H <span class="string">"Content-Type: application/json"</span> \
+  -d <span class="string">'{
+    "name": "John Doe",
+    "email": "john@example.com",
+    "password": "securePassword123",
+    "confirmPassword": "securePassword123"
+  }'</span>
+
+<span class="comment"># Login to get access token</span>
+curl -X POST https://api.fitnessapp.com/auth/login \
+  -H <span class="string">"Content-Type: application/json"</span> \
+  -d <span class="string">'{
+    "email": "john@example.com",
+    "password": "securePassword123"
+  }'</span>
+            </div>
+
+            <h3>2. Create a Workout</h3>
+            <div class="code-block">
+curl -X POST https://api.fitnessapp.com/workouts \
+  -H <span class="string">"Authorization: Bearer YOUR_TOKEN_HERE"</span> \
+  -H <span class="string">"Content-Type: application/json"</span> \
+  -d <span class="string">'{
+    "name": "Push Day",
+    "description": "Chest, shoulders, and triceps",
+    "date": "2024-01-15"
+  }'</span>
+            </div>
+
+            <h3>3. Add Sets to Workout</h3>
+            <div class="code-block">
+curl -X POST https://api.fitnessapp.com/workouts/workout_123/sets \
+  -H <span class="string">"Authorization: Bearer YOUR_TOKEN_HERE"</span> \
+  -H <span class="string">"Content-Type: application/json"</span> \
+  -d <span class="string">'{
+    "exerciseId": "exercise_bench_press",
+    "setNumber": 1,
+    "reps": 8,
+    "weight": 135,
+    "rpe": 7
+  }'</span>
+            </div>
+
+            <h3>4. Voice Workout Logging</h3>
+            <div class="code-block">
+<span class="comment"># Create voice session</span>
+curl -X POST https://api.fitnessapp.com/voice/sessions \
+  -H <span class="string">"Authorization: Bearer YOUR_TOKEN_HERE"</span> \
+  -H <span class="string">"Content-Type: application/json"</span> \
+  -d <span class="string">'{"workoutId": "workout_123"}'</span>
+
+<span class="comment"># Process voice transcript</span>
+curl -X POST https://api.fitnessapp.com/voice/extract-workout \
+  -H <span class="string">"Authorization: Bearer YOUR_TOKEN_HERE"</span> \
+  -H <span class="string">"Content-Type: application/json"</span> \
+  -d <span class="string">'{
+    "transcript": "I just completed 3 sets of bench press with 135 pounds for 8 reps each"
+  }'</span>
+            </div>
+
+            <h3>5. Generate AI Workout</h3>
+            <div class="code-block">
+curl -X POST https://api.fitnessapp.com/workouts/generate \
+  -H <span class="string">"Authorization: Bearer YOUR_TOKEN_HERE"</span> \
+  -H <span class="string">"Content-Type: application/json"</span> \
+  -d <span class="string">'{
+    "prompt": "Create a 45-minute upper body strength workout for intermediate level",
+    "preferences": {
+      "duration": 45,
+      "equipment": ["barbell", "dumbbell"],
+      "targetMuscles": ["chest", "shoulders", "triceps"],
+      "level": "intermediate"
+    }
+  }'</span>
+            </div>
+        </div>
+
+        <div class="quick-start">
+            <h2>Key Endpoints</h2>
+            <div class="endpoints-grid">
+                <div class="endpoint-card">
+                    <h4><span class="method-badge method-post">POST</span> /auth/login</h4>
+                    <p>Authenticate user and receive JWT token</p>
+                </div>
+                <div class="endpoint-card">
+                    <h4><span class="method-badge method-get">GET</span> /workouts</h4>
+                    <p>Get user's workouts with pagination and filtering</p>
+                </div>
+                <div class="endpoint-card">
+                    <h4><span class="method-badge method-post">POST</span> /workouts</h4>
+                    <p>Create a new workout</p>
+                </div>
+                <div class="endpoint-card">
+                    <h4><span class="method-badge method-get">GET</span> /exercises</h4>
+                    <p>Browse exercise library with advanced filtering</p>
+                </div>
+                <div class="endpoint-card">
+                    <h4><span class="method-badge method-post">POST</span> /voice/sessions</h4>
+                    <p>Start a voice logging session</p>
+                </div>
+                <div class="endpoint-card">
+                    <h4><span class="method-badge method-post">POST</span> /workouts/generate</h4>
+                    <p>Generate AI-powered workout</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="download-links">
+            <a href="./openapi.yaml" class="download-btn" download>
+                📄 Download OpenAPI Spec
+            </a>
+            <a href="./postman-collection.json" class="download-btn" download>
+                📮 Download Postman Collection
+            </a>
+            <a href="./integration-guide.md" class="download-btn">
+                📖 Integration Guide
+            </a>
+        </div>
+    </div>
+
+    <!-- Swagger UI -->
+    <div id="swagger-ui"></div>
+
+    <script src="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui-bundle.js"></script>
+    <script src="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui-standalone-preset.js"></script>
+    <script>
+        window.onload = function() {
+            // Build a system
+            const ui = SwaggerUIBundle({
+                url: './openapi.yaml',
+                dom_id: '#swagger-ui',
+                deepLinking: true,
+                presets: [
+                    SwaggerUIBundle.presets.apis,
+                    SwaggerUIStandalonePreset
+                ],
+                plugins: [
+                    SwaggerUIBundle.plugins.DownloadUrl
+                ],
+                layout: "StandaloneLayout",
+                defaultModelsExpandDepth: 1,
+                defaultModelExpandDepth: 1,
+                docExpansion: "none",
+                operationsSorter: "alpha",
+                filter: true,
+                tryItOutEnabled: true,
+                requestInterceptor: function(request) {
+                    // Add any default headers or modify requests here
+                    return request;
+                },
+                responseInterceptor: function(response) {
+                    // Handle responses here
+                    return response;
+                }
+            });
+
+            // Add custom styling after UI loads
+            setTimeout(() => {
+                const style = document.createElement('style');
+                style.textContent = `
+                    .swagger-ui .scheme-container {
+                        background: #f8f9fa;
+                        border: 1px solid #e9ecef;
+                        border-radius: 4px;
+                        padding: 1rem;
+                        margin-bottom: 1rem;
+                    }
+                    
+                    .swagger-ui .info {
+                        margin: 2rem 0;
+                    }
+                    
+                    .swagger-ui .info .title {
+                        color: #667eea;
+                    }
+                    
+                    .swagger-ui .opblock.opblock-post {
+                        border-color: #22543d;
+                        background: rgba(34, 84, 61, .1);
+                    }
+                    
+                    .swagger-ui .opblock.opblock-get {
+                        border-color: #234e52;
+                        background: rgba(35, 78, 82, .1);
+                    }
+                    
+                    .swagger-ui .opblock.opblock-patch {
+                        border-color: #744210;
+                        background: rgba(116, 66, 16, .1);
+                    }
+                    
+                    .swagger-ui .opblock.opblock-delete {
+                        border-color: #742a2a;
+                        background: rgba(116, 42, 42, .1);
+                    }
+                `;
+                document.head.appendChild(style);
+            }, 100);
+        };
+    </script>
+</body>
+</html>

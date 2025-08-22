@@ -1,0 +1,70 @@
+# Multi-stage Dockerfile for Node.js Backend
+# Production-ready with security best practices
+
+# Build stage
+FROM node:18-alpine AS builder
+
+# Add security labels
+LABEL maintainer="fitness-tracker-team"
+LABEL security.scan="enabled"
+
+# Create app directory with proper permissions
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nextjs -u 1001 && \
+    mkdir -p /app && \
+    chown -R nextjs:nodejs /app
+
+WORKDIR /app
+
+# Copy package files for better caching
+COPY package*.json ./
+COPY backend/package*.json ./backend/
+
+# Install dependencies with security audit
+RUN npm ci --only=production --audit && \
+    npm cache clean --force
+
+# Copy backend source code
+COPY backend/ ./backend/
+
+# Install backend dependencies
+WORKDIR /app/backend
+RUN npm ci --only=production --audit
+
+# Production stage
+FROM node:18-alpine AS production
+
+# Security: Run as non-root user
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nodejs -u 1001
+
+# Install security updates
+RUN apk update && \
+    apk upgrade && \
+    apk add --no-cache dumb-init && \
+    rm -rf /var/cache/apk/*
+
+WORKDIR /app
+
+# Copy built application from builder stage
+COPY --from=builder --chown=nodejs:nodejs /app/backend ./
+
+# Create logs directory
+RUN mkdir -p logs && chown nodejs:nodejs logs
+
+# Security: Remove unnecessary packages and files
+RUN npm prune --production && \
+    rm -rf /tmp/* /var/tmp/* /root/.npm
+
+USER nodejs
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD node healthcheck.js || exit 1
+
+# Use dumb-init for proper signal handling
+ENTRYPOINT ["dumb-init", "--"]
+
+EXPOSE 3000
+
+CMD ["node", "server.js"]

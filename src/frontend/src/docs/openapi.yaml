@@ -1,0 +1,1862 @@
+openapi: 3.0.0
+info:
+  title: Fitness Tracking API
+  version: 1.0.0
+  description: |
+    A comprehensive fitness tracking API with voice integration, workout management, 
+    exercise libraries, and LLM-powered workout generation capabilities.
+  
+    ## Features
+    - User authentication with JWT tokens
+    - Workout creation and tracking
+    - Exercise library with media support
+    - Voice-powered workout logging
+    - LLM workout generation
+    - Goal setting and progress tracking
+    - Offline support with sync capabilities
+    
+  contact:
+    name: API Support
+    email: support@fitnessapi.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:3000/api
+    description: Development server
+  - url: https://api.fitnessapp.com
+    description: Production server
+
+security:
+  - BearerAuth: []
+
+paths:
+  # Health Check
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Health check endpoint
+      description: Simple health check to verify API status
+      security: []
+      responses:
+        '200':
+          description: API is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "ok"
+                  timestamp:
+                    type: string
+                    format: date-time
+
+  # Authentication Endpoints
+  /auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: User login
+      description: Authenticate user with email and password
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /auth/register:
+    post:
+      tags:
+        - Authentication
+      summary: User registration
+      description: Create a new user account
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: Registration successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /auth/logout:
+    post:
+      tags:
+        - Authentication
+      summary: User logout
+      description: Invalidate current session
+      responses:
+        '200':
+          description: Logout successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /auth/refresh:
+    post:
+      tags:
+        - Authentication
+      summary: Refresh access token
+      description: Get a new access token using refresh token
+      responses:
+        '200':
+          description: Token refreshed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /auth/profile:
+    get:
+      tags:
+        - Authentication
+      summary: Get user profile
+      description: Get current user's profile information
+      responses:
+        '200':
+          description: Profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+    patch:
+      tags:
+        - Authentication
+      summary: Update user profile
+      description: Update current user's profile information
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserUpdateRequest'
+      responses:
+        '200':
+          description: Profile updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/User'
+
+  /auth/password:
+    patch:
+      tags:
+        - Authentication
+      summary: Change password
+      description: Change user's password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+      responses:
+        '200':
+          description: Password changed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+
+  /auth/forgot-password:
+    post:
+      tags:
+        - Authentication
+      summary: Request password reset
+      description: Send password reset email
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: "user@example.com"
+      responses:
+        '200':
+          description: Password reset email sent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /auth/reset-password:
+    post:
+      tags:
+        - Authentication
+      summary: Reset password
+      description: Reset password using reset token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResetPasswordRequest'
+      responses:
+        '200':
+          description: Password reset successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  # Workout Endpoints
+  /workouts:
+    get:
+      tags:
+        - Workouts
+      summary: Get workouts
+      description: Retrieve user's workouts with pagination and filtering
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/WorkoutStatus'
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Workouts retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/PaginatedWorkouts'
+
+    post:
+      tags:
+        - Workouts
+      summary: Create workout
+      description: Create a new workout
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkoutCreateRequest'
+      responses:
+        '201':
+          description: Workout created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Workout'
+
+  /workouts/{id}:
+    get:
+      tags:
+        - Workouts
+      summary: Get workout by ID
+      description: Retrieve a specific workout by its ID
+      parameters:
+        - $ref: '#/components/parameters/WorkoutId'
+      responses:
+        '200':
+          description: Workout retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Workout'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+    patch:
+      tags:
+        - Workouts
+      summary: Update workout
+      description: Update an existing workout
+      parameters:
+        - $ref: '#/components/parameters/WorkoutId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkoutUpdateRequest'
+      responses:
+        '200':
+          description: Workout updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Workout'
+
+    delete:
+      tags:
+        - Workouts
+      summary: Delete workout
+      description: Delete a workout
+      parameters:
+        - $ref: '#/components/parameters/WorkoutId'
+      responses:
+        '200':
+          description: Workout deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /workouts/{id}/sets:
+    post:
+      tags:
+        - Workouts
+      summary: Add set to workout
+      description: Add a new set to an existing workout
+      parameters:
+        - $ref: '#/components/parameters/WorkoutId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkoutSetCreateRequest'
+      responses:
+        '201':
+          description: Set added successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/WorkoutSet'
+
+  /sets/{id}:
+    patch:
+      tags:
+        - Workouts
+      summary: Update workout set
+      description: Update an existing workout set
+      parameters:
+        - $ref: '#/components/parameters/SetId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkoutSetUpdateRequest'
+      responses:
+        '200':
+          description: Set updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/WorkoutSet'
+
+    delete:
+      tags:
+        - Workouts
+      summary: Delete workout set
+      description: Delete a workout set
+      parameters:
+        - $ref: '#/components/parameters/SetId'
+      responses:
+        '200':
+          description: Set deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /workouts/templates:
+    get:
+      tags:
+        - Workouts
+      summary: Get workout templates
+      description: Retrieve user's workout templates
+      responses:
+        '200':
+          description: Templates retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Workout'
+
+    post:
+      tags:
+        - Workouts
+      summary: Create workout template
+      description: Create a new workout template
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkoutCreateRequest'
+      responses:
+        '201':
+          description: Template created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Workout'
+
+  /workouts/templates/{id}/use:
+    post:
+      tags:
+        - Workouts
+      summary: Use workout template
+      description: Create a new workout from a template
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Template ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - date
+              properties:
+                date:
+                  type: string
+                  format: date
+                  example: "2024-01-15"
+      responses:
+        '201':
+          description: Workout created from template
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Workout'
+
+  /workouts/generate:
+    post:
+      tags:
+        - Workouts
+        - LLM Integration
+      summary: Generate AI workout
+      description: Generate a workout using LLM based on user prompt and preferences
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkoutGenerateRequest'
+      responses:
+        '201':
+          description: Workout generated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Workout'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+
+  # Exercise Endpoints
+  /exercises:
+    get:
+      tags:
+        - Exercises
+      summary: Get exercises
+      description: Retrieve exercises with filtering and pagination
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: category
+          in: query
+          schema:
+            $ref: '#/components/schemas/ExerciseCategory'
+        - name: muscle
+          in: query
+          schema:
+            $ref: '#/components/schemas/MuscleGroup'
+        - name: equipment
+          in: query
+          schema:
+            $ref: '#/components/schemas/Equipment'
+        - name: search
+          in: query
+          schema:
+            type: string
+          description: Search term for exercise name or description
+      responses:
+        '200':
+          description: Exercises retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/PaginatedExercises'
+
+    post:
+      tags:
+        - Exercises
+      summary: Create exercise
+      description: Create a new exercise (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExerciseCreateRequest'
+      responses:
+        '201':
+          description: Exercise created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Exercise'
+
+  /exercises/{id}:
+    get:
+      tags:
+        - Exercises
+      summary: Get exercise by ID
+      description: Retrieve a specific exercise by its ID
+      parameters:
+        - $ref: '#/components/parameters/ExerciseId'
+      responses:
+        '200':
+          description: Exercise retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Exercise'
+
+  /exercises/search:
+    get:
+      tags:
+        - Exercises
+      summary: Search exercises
+      description: Search exercises by name or description
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Search query
+      responses:
+        '200':
+          description: Search results retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Exercise'
+
+  /exercises/{id}/alternatives:
+    get:
+      tags:
+        - Exercises
+      summary: Get exercise alternatives
+      description: Get alternative exercises for a specific exercise
+      parameters:
+        - $ref: '#/components/parameters/ExerciseId'
+      responses:
+        '200':
+          description: Alternatives retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Exercise'
+
+  /exercises/{id}/favorite:
+    post:
+      tags:
+        - Exercises
+      summary: Add to favorites
+      description: Add exercise to user's favorites
+      parameters:
+        - $ref: '#/components/parameters/ExerciseId'
+      responses:
+        '200':
+          description: Added to favorites successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+    delete:
+      tags:
+        - Exercises
+      summary: Remove from favorites
+      description: Remove exercise from user's favorites
+      parameters:
+        - $ref: '#/components/parameters/ExerciseId'
+      responses:
+        '200':
+          description: Removed from favorites successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  # Voice Integration Endpoints
+  /voice/sessions:
+    get:
+      tags:
+        - Voice Integration
+      summary: Get voice sessions
+      description: Retrieve user's voice sessions
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        '200':
+          description: Voice sessions retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/VoiceSession'
+
+    post:
+      tags:
+        - Voice Integration
+      summary: Create voice session
+      description: Create a new voice session for workout logging
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                workoutId:
+                  type: string
+                  description: Optional workout ID to associate with session
+      responses:
+        '201':
+          description: Voice session created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/VoiceSession'
+
+  /voice/sessions/{id}:
+    get:
+      tags:
+        - Voice Integration
+      summary: Get voice session
+      description: Retrieve a specific voice session
+      parameters:
+        - $ref: '#/components/parameters/VoiceSessionId'
+      responses:
+        '200':
+          description: Voice session retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/VoiceSession'
+
+  /voice/process:
+    post:
+      tags:
+        - Voice Integration
+      summary: Process voice audio
+      description: Process audio data and extract workout information
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VoiceProcessRequest'
+      responses:
+        '200':
+          description: Audio processed successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/VoiceProcessResponse'
+
+  /voice/extract-workout:
+    post:
+      tags:
+        - Voice Integration
+      summary: Extract workout data
+      description: Extract structured workout data from transcript
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - transcript
+              properties:
+                transcript:
+                  type: string
+                  description: Voice transcript text
+                  example: "I did 3 sets of bench press with 135 pounds for 8 reps each"
+      responses:
+        '200':
+          description: Workout data extracted successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/WorkoutExtractionResponse'
+
+  /voice/command:
+    post:
+      tags:
+        - Voice Integration
+      summary: Process voice command
+      description: Process and execute voice commands
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VoiceCommandRequest'
+      responses:
+        '200':
+          description: Command processed successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/VoiceCommandResponse'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token obtained from login endpoint
+
+  parameters:
+    WorkoutId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Workout ID
+      example: "workout_123"
+
+    ExerciseId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Exercise ID
+      example: "exercise_456"
+
+    SetId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Set ID
+      example: "set_789"
+
+    VoiceSessionId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Voice session ID
+      example: "voice_session_101"
+
+  schemas:
+    # Core Models
+    User:
+      type: object
+      required:
+        - id
+        - email
+        - name
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          example: "user_123"
+        email:
+          type: string
+          format: email
+          example: "john@example.com"
+        name:
+          type: string
+          example: "John Doe"
+        avatar:
+          type: string
+          format: uri
+          example: "https://example.com/avatar.jpg"
+        createdAt:
+          type: string
+          format: date-time
+          example: "2024-01-01T00:00:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2024-01-01T00:00:00Z"
+
+    Exercise:
+      type: object
+      required:
+        - id
+        - name
+        - category
+        - movementPattern
+        - primaryMuscles
+        - secondaryMuscles
+        - equipment
+      properties:
+        id:
+          type: string
+          example: "exercise_bench_press"
+        name:
+          type: string
+          example: "Bench Press"
+        description:
+          type: string
+          example: "A fundamental upper body strength exercise"
+        category:
+          $ref: '#/components/schemas/ExerciseCategory'
+        movementPattern:
+          $ref: '#/components/schemas/MovementPattern'
+        primaryMuscles:
+          type: array
+          items:
+            $ref: '#/components/schemas/MuscleGroup'
+          example: ["chest", "triceps"]
+        secondaryMuscles:
+          type: array
+          items:
+            $ref: '#/components/schemas/MuscleGroup'
+          example: ["shoulders"]
+        equipment:
+          type: array
+          items:
+            $ref: '#/components/schemas/Equipment'
+          example: ["barbell"]
+        instructions:
+          type: array
+          items:
+            type: string
+          example: ["Lie on bench", "Lower bar to chest", "Press up"]
+        videoUrl:
+          type: string
+          format: uri
+          example: "https://example.com/video.mp4"
+        imageUrl:
+          type: string
+          format: uri
+          example: "https://example.com/image.jpg"
+
+    WorkoutSet:
+      type: object
+      required:
+        - id
+        - exerciseId
+        - setNumber
+        - completed
+      properties:
+        id:
+          type: string
+          example: "set_123"
+        exerciseId:
+          type: string
+          example: "exercise_bench_press"
+        setNumber:
+          type: integer
+          minimum: 1
+          example: 1
+        reps:
+          type: integer
+          minimum: 0
+          example: 8
+        weight:
+          type: number
+          minimum: 0
+          example: 135.5
+        time:
+          type: integer
+          minimum: 0
+          description: Duration in seconds
+          example: 30
+        distance:
+          type: number
+          minimum: 0
+          description: Distance in meters
+          example: 1000
+        rpe:
+          type: integer
+          minimum: 1
+          maximum: 10
+          description: Rate of Perceived Exertion (1-10)
+          example: 7
+        notes:
+          type: string
+          example: "Felt good, could do more"
+        completed:
+          type: boolean
+          example: true
+        completedAt:
+          type: string
+          format: date-time
+          example: "2024-01-01T00:00:00Z"
+
+    Workout:
+      type: object
+      required:
+        - id
+        - userId
+        - name
+        - date
+        - sets
+        - status
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          example: "workout_123"
+        userId:
+          type: string
+          example: "user_123"
+        name:
+          type: string
+          example: "Push Day"
+        description:
+          type: string
+          example: "Chest, shoulders, and triceps workout"
+        date:
+          type: string
+          format: date
+          example: "2024-01-15"
+        startTime:
+          type: string
+          format: date-time
+          example: "2024-01-15T09:00:00Z"
+        endTime:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:30:00Z"
+        sets:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkoutSet'
+        status:
+          $ref: '#/components/schemas/WorkoutStatus'
+        totalVolume:
+          type: number
+          description: Total volume in kg/lbs
+          example: 5400
+        totalTime:
+          type: integer
+          description: Total workout time in seconds
+          example: 5400
+        notes:
+          type: string
+          example: "Great workout, felt strong"
+        createdAt:
+          type: string
+          format: date-time
+          example: "2024-01-01T00:00:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2024-01-01T00:00:00Z"
+
+    VoiceSession:
+      type: object
+      required:
+        - id
+        - userId
+        - startTime
+        - transcript
+        - processed
+        - status
+      properties:
+        id:
+          type: string
+          example: "voice_session_123"
+        userId:
+          type: string
+          example: "user_123"
+        workoutId:
+          type: string
+          example: "workout_123"
+        startTime:
+          type: string
+          format: date-time
+          example: "2024-01-15T09:00:00Z"
+        endTime:
+          type: string
+          format: date-time
+          example: "2024-01-15T09:05:00Z"
+        transcript:
+          type: string
+          example: "I just completed 3 sets of bench press with 135 pounds for 8 reps each"
+        processed:
+          type: boolean
+          example: true
+        extractedData:
+          type: object
+          description: Structured data extracted from voice
+          example:
+            exercises: ["bench_press"]
+            sets: [{"reps": 8, "weight": 135}]
+        status:
+          $ref: '#/components/schemas/VoiceSessionStatus'
+
+    # Enums
+    ExerciseCategory:
+      type: string
+      enum:
+        - strength
+        - cardio
+        - flexibility
+        - balance
+        - mobility
+        - plyometric
+      example: strength
+
+    MovementPattern:
+      type: string
+      enum:
+        - squat
+        - hinge
+        - lunge
+        - push
+        - pull
+        - carry
+        - twist
+        - gait
+      example: push
+
+    MuscleGroup:
+      type: string
+      enum:
+        - chest
+        - back
+        - shoulders
+        - biceps
+        - triceps
+        - forearms
+        - core
+        - glutes
+        - quadriceps
+        - hamstrings
+        - calves
+        - traps
+        - lats
+      example: chest
+
+    Equipment:
+      type: string
+      enum:
+        - barbell
+        - dumbbell
+        - kettlebell
+        - cable
+        - machine
+        - bodyweight
+        - resistance_band
+        - medicine_ball
+        - suspension_trainer
+        - none
+      example: barbell
+
+    WorkoutStatus:
+      type: string
+      enum:
+        - planned
+        - in_progress
+        - completed
+        - cancelled
+      example: completed
+
+    VoiceSessionStatus:
+      type: string
+      enum:
+        - recording
+        - processing
+        - completed
+        - error
+      example: completed
+
+    # Request Schemas
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          example: "john@example.com"
+        password:
+          type: string
+          format: password
+          example: "securePassword123"
+
+    RegisterRequest:
+      type: object
+      required:
+        - name
+        - email
+        - password
+        - confirmPassword
+      properties:
+        name:
+          type: string
+          example: "John Doe"
+        email:
+          type: string
+          format: email
+          example: "john@example.com"
+        password:
+          type: string
+          format: password
+          example: "securePassword123"
+        confirmPassword:
+          type: string
+          format: password
+          example: "securePassword123"
+
+    UserUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          example: "John Doe"
+        avatar:
+          type: string
+          format: uri
+          example: "https://example.com/avatar.jpg"
+
+    ChangePasswordRequest:
+      type: object
+      required:
+        - currentPassword
+        - newPassword
+      properties:
+        currentPassword:
+          type: string
+          format: password
+        newPassword:
+          type: string
+          format: password
+
+    ResetPasswordRequest:
+      type: object
+      required:
+        - token
+        - newPassword
+      properties:
+        token:
+          type: string
+          example: "reset_token_123"
+        newPassword:
+          type: string
+          format: password
+
+    WorkoutCreateRequest:
+      type: object
+      required:
+        - name
+        - date
+      properties:
+        name:
+          type: string
+          example: "Push Day"
+        description:
+          type: string
+          example: "Chest, shoulders, and triceps workout"
+        date:
+          type: string
+          format: date
+          example: "2024-01-15"
+        exerciseIds:
+          type: array
+          items:
+            type: string
+          example: ["exercise_bench_press", "exercise_shoulder_press"]
+
+    WorkoutUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          example: "Updated Push Day"
+        description:
+          type: string
+        status:
+          $ref: '#/components/schemas/WorkoutStatus'
+        notes:
+          type: string
+        startTime:
+          type: string
+          format: date-time
+        endTime:
+          type: string
+          format: date-time
+
+    WorkoutSetCreateRequest:
+      type: object
+      required:
+        - exerciseId
+        - setNumber
+      properties:
+        exerciseId:
+          type: string
+          example: "exercise_bench_press"
+        setNumber:
+          type: integer
+          minimum: 1
+          example: 1
+        reps:
+          type: integer
+          minimum: 0
+          example: 8
+        weight:
+          type: number
+          minimum: 0
+          example: 135.5
+        time:
+          type: integer
+          minimum: 0
+        distance:
+          type: number
+          minimum: 0
+        rpe:
+          type: integer
+          minimum: 1
+          maximum: 10
+        notes:
+          type: string
+
+    WorkoutSetUpdateRequest:
+      type: object
+      properties:
+        reps:
+          type: integer
+          minimum: 0
+        weight:
+          type: number
+          minimum: 0
+        time:
+          type: integer
+          minimum: 0
+        distance:
+          type: number
+          minimum: 0
+        rpe:
+          type: integer
+          minimum: 1
+          maximum: 10
+        notes:
+          type: string
+        completed:
+          type: boolean
+
+    ExerciseCreateRequest:
+      type: object
+      required:
+        - name
+        - category
+        - movementPattern
+        - primaryMuscles
+        - equipment
+      properties:
+        name:
+          type: string
+          example: "Bench Press"
+        description:
+          type: string
+        category:
+          $ref: '#/components/schemas/ExerciseCategory'
+        movementPattern:
+          $ref: '#/components/schemas/MovementPattern'
+        primaryMuscles:
+          type: array
+          items:
+            $ref: '#/components/schemas/MuscleGroup'
+        secondaryMuscles:
+          type: array
+          items:
+            $ref: '#/components/schemas/MuscleGroup'
+        equipment:
+          type: array
+          items:
+            $ref: '#/components/schemas/Equipment'
+        instructions:
+          type: array
+          items:
+            type: string
+
+    WorkoutGenerateRequest:
+      type: object
+      required:
+        - prompt
+      properties:
+        prompt:
+          type: string
+          example: "Create a 45-minute upper body strength workout for intermediate level"
+        preferences:
+          type: object
+          properties:
+            duration:
+              type: integer
+              description: Desired workout duration in minutes
+              example: 45
+            equipment:
+              type: array
+              items:
+                $ref: '#/components/schemas/Equipment'
+              example: ["barbell", "dumbbell"]
+            targetMuscles:
+              type: array
+              items:
+                $ref: '#/components/schemas/MuscleGroup'
+              example: ["chest", "shoulders", "triceps"]
+            level:
+              type: string
+              enum: ["beginner", "intermediate", "advanced"]
+              example: "intermediate"
+
+    VoiceProcessRequest:
+      type: object
+      required:
+        - sessionId
+        - audioData
+        - mimeType
+      properties:
+        sessionId:
+          type: string
+          example: "voice_session_123"
+        audioData:
+          type: string
+          description: Base64 encoded audio data
+          example: "data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEA..."
+        mimeType:
+          type: string
+          example: "audio/wav"
+
+    VoiceCommandRequest:
+      type: object
+      required:
+        - command
+      properties:
+        command:
+          type: string
+          example: "Start a new workout"
+        context:
+          type: object
+          description: Additional context for command processing
+          example:
+            currentWorkout: "workout_123"
+            currentExercise: "exercise_bench_press"
+
+    # Response Schemas
+    ApiResponse:
+      type: object
+      required:
+        - success
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: "Operation completed successfully"
+
+    SuccessResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              nullable: true
+
+    AuthResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              required:
+                - user
+                - token
+              properties:
+                user:
+                  $ref: '#/components/schemas/User'
+                token:
+                  type: string
+                  example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+
+    PaginatedResponse:
+      type: object
+      required:
+        - data
+        - total
+        - page
+        - limit
+        - hasNext
+        - hasPrev
+      properties:
+        data:
+          type: array
+        total:
+          type: integer
+          example: 100
+        page:
+          type: integer
+          example: 1
+        limit:
+          type: integer
+          example: 20
+        hasNext:
+          type: boolean
+          example: true
+        hasPrev:
+          type: boolean
+          example: false
+
+    PaginatedWorkouts:
+      allOf:
+        - $ref: '#/components/schemas/PaginatedResponse'
+        - type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/Workout'
+
+    PaginatedExercises:
+      allOf:
+        - $ref: '#/components/schemas/PaginatedResponse'
+        - type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/Exercise'
+
+    VoiceProcessResponse:
+      type: object
+      required:
+        - transcript
+        - extractedData
+        - confidence
+      properties:
+        transcript:
+          type: string
+          example: "I just completed 3 sets of bench press with 135 pounds for 8 reps each"
+        extractedData:
+          type: object
+          properties:
+            exercises:
+              type: array
+              items:
+                type: string
+              example: ["bench_press"]
+            sets:
+              type: array
+              items:
+                type: object
+              example: [{"reps": 8, "weight": 135, "setNumber": 1}]
+            metadata:
+              type: object
+              example: {"confidence": 0.95, "language": "en"}
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+          example: 0.95
+
+    WorkoutExtractionResponse:
+      type: object
+      required:
+        - exercises
+        - sets
+        - metadata
+      properties:
+        exercises:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              id:
+                type: string
+              confidence:
+                type: number
+          example: [{"name": "bench press", "id": "exercise_bench_press", "confidence": 0.95}]
+        sets:
+          type: array
+          items:
+            type: object
+            properties:
+              exerciseId:
+                type: string
+              reps:
+                type: integer
+              weight:
+                type: number
+              setNumber:
+                type: integer
+          example: [{"exerciseId": "exercise_bench_press", "reps": 8, "weight": 135, "setNumber": 1}]
+        metadata:
+          type: object
+          properties:
+            totalExercises:
+              type: integer
+            totalSets:
+              type: integer
+            confidence:
+              type: number
+          example: {"totalExercises": 1, "totalSets": 3, "confidence": 0.95}
+
+    VoiceCommandResponse:
+      type: object
+      required:
+        - action
+        - parameters
+        - confidence
+      properties:
+        action:
+          type: string
+          example: "create_workout"
+        parameters:
+          type: object
+          example: {"name": "New Workout", "date": "2024-01-15"}
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+          example: 0.9
+
+    ErrorResponse:
+      type: object
+      required:
+        - success
+        - error
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: object
+          required:
+            - code
+            - message
+          properties:
+            code:
+              type: string
+              example: "VALIDATION_ERROR"
+            message:
+              type: string
+              example: "Invalid input data"
+            details:
+              type: object
+              example: {"field": "email", "issue": "Invalid email format"}
+
+  responses:
+    BadRequestError:
+      description: Bad Request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error:
+              code: "BAD_REQUEST"
+              message: "Invalid request data"
+
+    UnauthorizedError:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error:
+              code: "UNAUTHORIZED"
+              message: "Invalid or expired token"
+
+    ForbiddenError:
+      description: Forbidden
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error:
+              code: "FORBIDDEN"
+              message: "Insufficient permissions"
+
+    NotFoundError:
+      description: Not Found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error:
+              code: "NOT_FOUND"
+              message: "Resource not found"
+
+    ConflictError:
+      description: Conflict
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error:
+              code: "CONFLICT"
+              message: "Resource already exists"
+
+    ValidationError:
+      description: Validation Error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error:
+              code: "VALIDATION_ERROR"
+              message: "Invalid input data"
+              details:
+                email: "Invalid email format"
+                password: "Password must be at least 8 characters"
+
+    InternalServerError:
+      description: Internal Server Error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error:
+              code: "INTERNAL_ERROR"
+              message: "An unexpected error occurred"
+
+tags:
+  - name: Health
+    description: API health and status endpoints
+  - name: Authentication
+    description: User authentication and profile management
+  - name: Workouts
+    description: Workout creation, tracking, and management
+  - name: Exercises
+    description: Exercise library and management
+  - name: Voice Integration
+    description: Voice-powered workout logging and commands
+  - name: LLM Integration
+    description: AI-powered workout generation and recommendations

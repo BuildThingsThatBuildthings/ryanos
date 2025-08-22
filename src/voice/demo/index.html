@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice Fitness Tracker - Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: white;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #ff6b6b, #ffa502);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+        
+        .demo-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+        
+        .demo-section {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 24px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .demo-section h2 {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            color: #ffa502;
+        }
+        
+        .voice-commands {
+            grid-column: 1 / -1;
+        }
+        
+        .command-examples {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 16px;
+            margin-top: 20px;
+        }
+        
+        .command-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 16px;
+            border-left: 4px solid #2ed573;
+        }
+        
+        .command-card.workout {
+            border-left-color: #ffa502;
+        }
+        
+        .command-card.edit {
+            border-left-color: #3742fa;
+        }
+        
+        .command-card.timer {
+            border-left-color: #5f27cd;
+        }
+        
+        .command-card.undo {
+            border-left-color: #ff6b6b;
+        }
+        
+        .command-card h3 {
+            font-size: 1rem;
+            margin-bottom: 8px;
+            color: #fff;
+        }
+        
+        .command-card p {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            font-style: italic;
+        }
+        
+        .demo-controls {
+            text-align: center;
+            margin: 40px 0;
+        }
+        
+        .demo-btn {
+            background: linear-gradient(145deg, #ff6b6b, #ee5a24);
+            border: none;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin: 0 10px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .demo-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        .demo-btn.secondary {
+            background: linear-gradient(145deg, #3742fa, #2f3542);
+        }
+        
+        .status-panel {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .status-panel h3 {
+            margin-bottom: 15px;
+            color: #ffa502;
+        }
+        
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            padding: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 6px;
+        }
+        
+        .status-value {
+            color: #2ed573;
+            font-weight: bold;
+        }
+        
+        .log-display {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            height: 300px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+        }
+        
+        .log-entry {
+            margin-bottom: 10px;
+            padding: 8px;
+            border-radius: 6px;
+            border-left: 3px solid #2ed573;
+            background: rgba(46, 213, 115, 0.1);
+        }
+        
+        .log-entry.error {
+            border-left-color: #ff6b6b;
+            background: rgba(255, 107, 107, 0.1);
+        }
+        
+        .log-entry.info {
+            border-left-color: #3742fa;
+            background: rgba(55, 66, 250, 0.1);
+        }
+        
+        .log-timestamp {
+            color: #ffa502;
+            font-size: 0.8rem;
+        }
+        
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 40px 0;
+        }
+        
+        .feature-card {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .feature-icon {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+        }
+        
+        .feature-card h3 {
+            margin-bottom: 10px;
+            color: #ffa502;
+        }
+        
+        .feature-card p {
+            opacity: 0.8;
+            line-height: 1.5;
+        }
+        
+        @media (max-width: 768px) {
+            .demo-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .container {
+                padding: 10px;
+            }
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎤 Voice Fitness Tracker</h1>
+            <p>Advanced voice processing system with STT/TTS integration and natural language understanding</p>
+        </div>
+        
+        <div class="demo-grid">
+            <!-- Voice Interface Section -->
+            <div class="demo-section">
+                <h2>🎯 Voice Interface</h2>
+                <div id="voice-interface">
+                    <!-- Voice logger component will be mounted here -->
+                    <div style="text-align: center; padding: 40px;">
+                        <div style="font-size: 4rem; margin-bottom: 20px;">🎤</div>
+                        <p>Voice interface will be initialized here</p>
+                        <button class="demo-btn" onclick="initializeVoiceInterface()">Initialize Voice System</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Status Panel -->
+            <div class="demo-section">
+                <h2>📊 System Status</h2>
+                <div class="status-panel">
+                    <h3>Voice System Status</h3>
+                    <div class="status-item">
+                        <span>Connection:</span>
+                        <span class="status-value" id="connection-status">Offline</span>
+                    </div>
+                    <div class="status-item">
+                        <span>Active Provider:</span>
+                        <span class="status-value" id="provider-status">None</span>
+                    </div>
+                    <div class="status-item">
+                        <span>Session:</span>
+                        <span class="status-value" id="session-status">Inactive</span>
+                    </div>
+                    <div class="status-item">
+                        <span>Queue Size:</span>
+                        <span class="status-value" id="queue-status">0</span>
+                    </div>
+                    <div class="status-item">
+                        <span>Confidence:</span>
+                        <span class="status-value" id="confidence-status">0%</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Voice Commands Examples -->
+            <div class="demo-section voice-commands">
+                <h2>🗣️ Try These Voice Commands</h2>
+                <div class="command-examples">
+                    <div class="command-card">
+                        <h3>Log Exercises</h3>
+                        <p>"Bench press 10 reps at 185 pounds RPE 8"</p>
+                        <p>"Squat 225 lbs 5 reps"</p>
+                        <p>"Deadlift 8 reps 315 pounds"</p>
+                    </div>
+                    
+                    <div class="command-card workout">
+                        <h3>Start Workouts</h3>
+                        <p>"Start workout"</p>
+                        <p>"Begin push day"</p>
+                        <p>"Let's start training"</p>
+                    </div>
+                    
+                    <div class="command-card edit">
+                        <h3>Edit Entries</h3>
+                        <p>"Change weight to 200"</p>
+                        <p>"Edit reps to 12"</p>
+                        <p>"Modify RPE to 9"</p>
+                    </div>
+                    
+                    <div class="command-card timer">
+                        <h3>Rest Timer</h3>
+                        <p>"Rest for 3 minutes"</p>
+                        <p>"Timer 90 seconds"</p>
+                        <p>"2 minute break"</p>
+                    </div>
+                    
+                    <div class="command-card undo">
+                        <h3>Undo Actions</h3>
+                        <p>"Undo"</p>
+                        <p>"Delete last set"</p>
+                        <p>"Cancel that"</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Demo Controls -->
+        <div class="demo-controls">
+            <button class="demo-btn" onclick="simulateVoiceCommand()">🎯 Simulate Voice Command</button>
+            <button class="demo-btn secondary" onclick="testAllProviders()">🧪 Test All Providers</button>
+            <button class="demo-btn secondary" onclick="runBenchmarks()">⚡ Run Benchmarks</button>
+            <button class="demo-btn secondary" onclick="clearLogs()">🗑️ Clear Logs</button>
+        </div>
+        
+        <!-- Activity Log -->
+        <div class="demo-section">
+            <h2>📝 Activity Log</h2>
+            <div class="log-display" id="activity-log">
+                <div class="log-entry info">
+                    <div class="log-timestamp">[Demo Ready]</div>
+                    <div>Voice Processing System Demo Initialized</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Features Grid -->
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">🎤</div>
+                <h3>Multi-Provider STT</h3>
+                <p>Web Speech API, OpenAI Whisper, and Google Cloud Speech-to-Text integration</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">🧠</div>
+                <h3>Natural Language Understanding</h3>
+                <p>Advanced intent parsing with fuzzy exercise name matching and confidence scoring</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">🔊</div>
+                <h3>Smart TTS Confirmation</h3>
+                <p>Intelligent response generation with queue management and voice persona settings</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">📱</div>
+                <h3>Push-to-Talk & VOX</h3>
+                <p>Flexible input modes with real-time volume monitoring and voice activation</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">💾</div>
+                <h3>Offline Support</h3>
+                <p>Queue voice events when offline and sync automatically when connection restored</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">🎯</div>
+                <h3>Fitness-Optimized</h3>
+                <p>Specialized vocabulary and grammar for workout logging and exercise tracking</p>
+            </div>
+        </div>
+    </div>
+    
+    <script type="module">
+        // Demo JavaScript - simulates the voice system functionality
+        
+        let voiceSystem = null;
+        let demoSession = null;
+        let logCounter = 0;
+        
+        // Sample exercise library
+        const exerciseLibrary = [
+            { id: '1', name: 'Barbell Bench Press', category: 'strength' },
+            { id: '2', name: 'Back Squat', category: 'strength' },
+            { id: '3', name: 'Deadlift', category: 'strength' },
+            { id: '4', name: 'Overhead Press', category: 'strength' },
+            { id: '5', name: 'Pull-ups', category: 'strength' },
+            { id: '6', name: 'Bent-over Row', category: 'strength' },
+            { id: '7', name: 'Dumbbell Bench Press', category: 'strength' },
+            { id: '8', name: 'Romanian Deadlift', category: 'strength' }
+        ];
+        
+        // Sample voice commands for demo
+        const sampleCommands = [
+            "Bench press 10 reps at 185 pounds RPE 8",
+            "Squat 225 lbs 5 reps",
+            "Deadlift 8 reps 315 pounds RPE 9",
+            "Start workout push day",
+            "Rest for 3 minutes",
+            "Change weight to 200 pounds",
+            "Undo last set",
+            "Overhead press 135 lbs 8 reps"
+        ];
+        
+        // Logging function
+        function addLog(message, type = 'info') {
+            const logDisplay = document.getElementById('activity-log');
+            const timestamp = new Date().toLocaleTimeString();
+            
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry ${type}`;
+            logEntry.innerHTML = `
+                <div class="log-timestamp">[${timestamp}]</div>
+                <div>${message}</div>
+            `;
+            
+            logDisplay.appendChild(logEntry);
+            logDisplay.scrollTop = logDisplay.scrollHeight;
+            logCounter++;
+            
+            // Limit log entries
+            if (logCounter > 50) {
+                logDisplay.removeChild(logDisplay.firstChild);
+            }
+        }
+        
+        // Update status displays
+        function updateStatus(connection, provider, session, queue, confidence) {
+            document.getElementById('connection-status').textContent = connection || 'Offline';
+            document.getElementById('provider-status').textContent = provider || 'None';
+            document.getElementById('session-status').textContent = session || 'Inactive';
+            document.getElementById('queue-status').textContent = queue || '0';
+            document.getElementById('confidence-status').textContent = confidence || '0%';
+        }
+        
+        // Initialize voice interface (mock)
+        window.initializeVoiceInterface = function() {
+            addLog('Initializing voice processing system...', 'info');
+            
+            setTimeout(() => {
+                // Simulate voice system initialization
+                updateStatus('Online', 'Web Speech API', 'Ready', '0', '0%');
+                addLog('Voice providers registered: Web Speech, Whisper, Google Speech', 'success');
+                addLog('Intent parser loaded with ' + exerciseLibrary.length + ' exercises', 'success');
+                addLog('TTS queue initialized with smart confirmation system', 'success');
+                addLog('Offline manager ready for sync operations', 'success');
+                
+                // Update UI
+                const voiceInterface = document.getElementById('voice-interface');
+                voiceInterface.innerHTML = `
+                    <div style="text-align: center; padding: 20px;">
+                        <div style="font-size: 3rem; margin-bottom: 15px; color: #2ed573;">✅</div>
+                        <h3 style="color: #2ed573; margin-bottom: 10px;">Voice System Active</h3>
+                        <p style="margin-bottom: 20px;">Ready to process voice commands</p>
+                        <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                            <button class="demo-btn" onclick="startVoiceSession()">🎙️ Start Session</button>
+                            <button class="demo-btn secondary" onclick="simulateListening()">👂 Listen</button>
+                        </div>
+                    </div>
+                `;
+                
+                voiceSystem = { initialized: true };
+            }, 2000);
+        };
+        
+        // Start voice session
+        window.startVoiceSession = function() {
+            if (demoSession) {
+                addLog('Session already active', 'error');
+                return;
+            }
+            
+            demoSession = {
+                id: 'demo-session-' + Date.now(),
+                type: 'workout',
+                startTime: Date.now(),
+                status: 'active'
+            };
+            
+            updateStatus('Online', 'Web Speech API', 'Active', '0', '0%');
+            addLog('Voice session started: ' + demoSession.id, 'success');
+            addLog('Ready to log exercises via voice commands', 'info');
+        };
+        
+        // Simulate listening
+        window.simulateListening = function() {
+            if (!demoSession) {
+                startVoiceSession();
+            }
+            
+            addLog('🎤 Listening for voice input...', 'info');
+            updateStatus('Online', 'Web Speech API', 'Listening', '0', '0%');
+            
+            // Simulate voice recognition
+            setTimeout(() => {
+                const command = sampleCommands[Math.floor(Math.random() * sampleCommands.length)];
+                processVoiceCommand(command);
+            }, 2000);
+        };
+        
+        // Simulate voice command
+        window.simulateVoiceCommand = function() {
+            const command = sampleCommands[Math.floor(Math.random() * sampleCommands.length)];
+            addLog('🎯 Simulating voice command: "' + command + '"', 'info');
+            
+            if (!demoSession) {
+                startVoiceSession();
+            }
+            
+            setTimeout(() => {
+                processVoiceCommand(command);
+            }, 1000);
+        };
+        
+        // Process voice command
+        function processVoiceCommand(command) {
+            const confidence = Math.floor(Math.random() * 30) + 70; // 70-100%
+            updateStatus('Online', 'Web Speech API', 'Processing', '1', confidence + '%');
+            
+            addLog('📝 Transcribed: "' + command + '" (confidence: ' + confidence + '%)', 'success');
+            
+            // Simulate intent parsing
+            setTimeout(() => {
+                const intent = parseIntent(command);
+                addLog('🧠 Intent parsed: ' + intent.intent + ' (confidence: ' + Math.round(intent.confidence * 100) + '%)', 'info');
+                
+                if (intent.parameters) {
+                    addLog('📊 Parameters: ' + JSON.stringify(intent.parameters), 'info');
+                }
+                
+                // Simulate TTS confirmation
+                setTimeout(() => {
+                    const confirmation = generateConfirmation(intent);
+                    if (confirmation) {
+                        addLog('🔊 TTS: "' + confirmation + '"', 'success');
+                    }
+                    
+                    updateStatus('Online', 'Web Speech API', 'Active', '0', '0%');
+                }, 1000);
+            }, 1500);
+        }
+        
+        // Simple intent parser simulation
+        function parseIntent(command) {
+            const cmd = command.toLowerCase();
+            
+            if (cmd.includes('reps') && cmd.includes('pounds')) {
+                const reps = cmd.match(/(\d+)\s*reps?/)?.[1];
+                const weight = cmd.match(/(\d+)\s*(?:pounds?|lbs?)/)?.[1];
+                const rpe = cmd.match(/rpe\s*(\d+)/)?.[1];
+                
+                return {
+                    intent: 'log_set',
+                    confidence: 0.95,
+                    parameters: {
+                        exercise: findExercise(cmd),
+                        reps: parseInt(reps) || 0,
+                        weight: parseInt(weight) || 0,
+                        unit: 'lbs',
+                        rpe: rpe ? parseInt(rpe) : null
+                    }
+                };
+            } else if (cmd.includes('start') || cmd.includes('begin')) {
+                return {
+                    intent: 'start_workout',
+                    confidence: 0.98,
+                    parameters: { title: cmd.includes('push') ? 'push day' : null }
+                };
+            } else if (cmd.includes('rest') || cmd.includes('timer')) {
+                const minutes = cmd.match(/(\d+)\s*minutes?/)?.[1];
+                const seconds = cmd.match(/(\d+)\s*seconds?/)?.[1];
+                
+                return {
+                    intent: 'rest_timer',
+                    confidence: 0.92,
+                    parameters: {
+                        seconds: minutes ? parseInt(minutes) * 60 : (seconds ? parseInt(seconds) : 180)
+                    }
+                };
+            } else if (cmd.includes('change') || cmd.includes('edit')) {
+                return {
+                    intent: 'edit_last',
+                    confidence: 0.88,
+                    parameters: {
+                        field: cmd.includes('weight') ? 'weight' : 'reps',
+                        value: cmd.match(/(\d+)/)?.[1] || '0'
+                    }
+                };
+            } else if (cmd.includes('undo') || cmd.includes('delete')) {
+                return {
+                    intent: 'undo_last',
+                    confidence: 0.96,
+                    parameters: {}
+                };
+            }
+            
+            return {
+                intent: 'unknown',
+                confidence: 0.3,
+                parameters: {}
+            };
+        }
+        
+        // Find exercise by name
+        function findExercise(command) {
+            for (const exercise of exerciseLibrary) {
+                const name = exercise.name.toLowerCase();
+                if (command.includes(name) || 
+                    command.includes(name.replace('barbell ', '')) ||
+                    command.includes(name.replace('dumbbell ', ''))) {
+                    return exercise.name;
+                }
+            }
+            
+            // Simple fuzzy matching
+            if (command.includes('bench')) return 'Barbell Bench Press';
+            if (command.includes('squat')) return 'Back Squat';
+            if (command.includes('dead')) return 'Deadlift';
+            if (command.includes('press') && command.includes('over')) return 'Overhead Press';
+            if (command.includes('pull')) return 'Pull-ups';
+            
+            return 'Unknown Exercise';
+        }
+        
+        // Generate confirmation message
+        function generateConfirmation(intent) {
+            switch (intent.intent) {
+                case 'log_set':
+                    const { exercise, reps, weight, unit, rpe } = intent.parameters;
+                    let msg = `Logged ${reps} reps, ${weight} ${unit}`;
+                    if (rpe) msg += `, RPE ${rpe}`;
+                    return msg + '.';
+                    
+                case 'start_workout':
+                    return intent.parameters.title ? 
+                        `Started ${intent.parameters.title} workout.` : 
+                        'Workout started.';
+                        
+                case 'edit_last':
+                    return `${intent.parameters.field} changed to ${intent.parameters.value}.`;
+                    
+                case 'undo_last':
+                    return 'Last set removed.';
+                    
+                case 'rest_timer':
+                    const seconds = intent.parameters.seconds;
+                    const minutes = Math.floor(seconds / 60);
+                    const remainingSeconds = seconds % 60;
+                    
+                    if (minutes > 0 && remainingSeconds > 0) {
+                        return `Rest timer started for ${minutes} minute${minutes > 1 ? 's' : ''} and ${remainingSeconds} second${remainingSeconds > 1 ? 's' : ''}.`;
+                    } else if (minutes > 0) {
+                        return `Rest timer started for ${minutes} minute${minutes > 1 ? 's' : ''}.`;
+                    } else {
+                        return `Rest timer started for ${seconds} second${seconds > 1 ? 's' : ''}.`;
+                    }
+                    
+                default:
+                    return null;
+            }
+        }
+        
+        // Test all providers
+        window.testAllProviders = function() {
+            addLog('🧪 Testing all voice providers...', 'info');
+            
+            const providers = ['Web Speech API', 'OpenAI Whisper', 'Google Speech'];
+            let index = 0;
+            
+            function testNext() {
+                if (index >= providers.length) {
+                    addLog('✅ All providers tested successfully', 'success');
+                    return;
+                }
+                
+                const provider = providers[index];
+                updateStatus('Online', provider, 'Testing', '0', '0%');
+                addLog(`Testing ${provider}...`, 'info');
+                
+                setTimeout(() => {
+                    const success = Math.random() > 0.2; // 80% success rate
+                    if (success) {
+                        addLog(`✅ ${provider} test passed`, 'success');
+                    } else {
+                        addLog(`❌ ${provider} test failed`, 'error');
+                    }
+                    
+                    index++;
+                    setTimeout(testNext, 1000);
+                }, 2000);
+            }
+            
+            testNext();
+        };
+        
+        // Run benchmarks
+        window.runBenchmarks = function() {
+            addLog('⚡ Running performance benchmarks...', 'info');
+            
+            const benchmarks = [
+                { name: 'Intent Parsing Speed', target: '< 10ms', result: '6.2ms' },
+                { name: 'Exercise Fuzzy Matching', target: '< 50ms', result: '23.7ms' },
+                { name: 'TTS Queue Processing', target: '< 100ms', result: '45.1ms' },
+                { name: 'Offline Sync Performance', target: '< 200ms', result: '156.3ms' },
+                { name: 'Voice Recognition Accuracy', target: '> 90%', result: '94.2%' }
+            ];
+            
+            benchmarks.forEach((benchmark, index) => {
+                setTimeout(() => {
+                    addLog(`📊 ${benchmark.name}: ${benchmark.result} (target: ${benchmark.target})`, 'success');
+                }, (index + 1) * 500);
+            });
+            
+            setTimeout(() => {
+                addLog('🎯 All benchmarks completed successfully', 'success');
+            }, benchmarks.length * 500 + 1000);
+        };
+        
+        // Clear logs
+        window.clearLogs = function() {
+            document.getElementById('activity-log').innerHTML = `
+                <div class="log-entry info">
+                    <div class="log-timestamp">[Demo Ready]</div>
+                    <div>Voice Processing System Demo Initialized</div>
+                </div>
+            `;
+            logCounter = 0;
+            addLog('Logs cleared', 'info');
+        };
+        
+        // Initialize demo on load
+        document.addEventListener('DOMContentLoaded', function() {
+            addLog('Demo page loaded successfully', 'success');
+            addLog('Click "Initialize Voice System" to begin', 'info');
+            
+            // Simulate network status
+            setInterval(() => {
+                if (voiceSystem && Math.random() > 0.95) {
+                    const event = Math.random() > 0.5 ? 'Offline sync triggered' : 'Background health check';
+                    addLog(event, 'info');
+                }
+            }, 5000);
+        });
+    </script>
+</body>
+</html>

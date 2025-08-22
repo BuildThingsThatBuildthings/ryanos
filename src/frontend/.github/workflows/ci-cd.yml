@@ -1,0 +1,386 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  release:
+    types: [ published ]
+
+env:
+  REGISTRY: ghcr.io
+  BACKEND_IMAGE_NAME: fitness-tracker/backend
+  FRONTEND_IMAGE_NAME: fitness-tracker/frontend
+  NODE_VERSION: '18'
+
+jobs:
+  # Security and vulnerability scanning
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+
+    - name: Upload Trivy scan results
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: 'trivy-results.sarif'
+
+  # Code quality and testing
+  test-backend:
+    name: Test Backend
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: backend/package-lock.json
+
+    - name: Install backend dependencies
+      working-directory: ./backend
+      run: npm ci
+
+    - name: Run backend linting
+      working-directory: ./backend
+      run: npm run lint
+
+    - name: Run backend type checking
+      working-directory: ./backend
+      run: npm run typecheck
+
+    - name: Run backend unit tests
+      working-directory: ./backend
+      run: npm run test:coverage
+      env:
+        NODE_ENV: test
+        JWT_SECRET: test-jwt-secret
+
+    - name: Upload backend coverage reports
+      uses: codecov/codecov-action@v4
+      with:
+        file: ./backend/coverage/lcov.info
+        flags: backend
+        name: backend-coverage
+
+  test-frontend:
+    name: Test Frontend
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+
+    - name: Install frontend dependencies
+      run: npm ci
+
+    - name: Run frontend linting
+      run: npm run lint
+
+    - name: Run frontend type checking
+      run: npm run typecheck
+
+    - name: Run frontend unit tests
+      run: npm run test:coverage
+
+    - name: Upload frontend coverage reports
+      uses: codecov/codecov-action@v4
+      with:
+        file: ./coverage/lcov.info
+        flags: frontend
+        name: frontend-coverage
+
+  # End-to-End testing
+  e2e-tests:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    needs: [test-backend, test-frontend]
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Install Playwright
+      run: npx playwright install --with-deps
+
+    - name: Start test environment
+      run: |
+        docker-compose -f docker-compose.yml up -d
+        sleep 30
+      env:
+        JWT_SECRET: test-jwt-secret
+
+    - name: Run E2E tests
+      run: npm run test:e2e
+
+    - name: Upload E2E test results
+      uses: actions/upload-artifact@v4
+      if: failure()
+      with:
+        name: playwright-report
+        path: playwright-report/
+        retention-days: 30
+
+    - name: Stop test environment
+      if: always()
+      run: docker-compose down
+
+  # Build and push Docker images
+  build-backend:
+    name: Build Backend Image
+    runs-on: ubuntu-latest
+    needs: [security-scan, test-backend]
+    outputs:
+      image-digest: ${{ steps.build.outputs.digest }}
+      image-tag: ${{ steps.meta.outputs.tags }}
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=sha,prefix={{branch}}-
+          type=raw,value=latest,enable={{is_default_branch}}
+
+    - name: Build and push backend image
+      id: build
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./Dockerfile.backend
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        platforms: linux/amd64,linux/arm64
+
+  build-frontend:
+    name: Build Frontend Image
+    runs-on: ubuntu-latest
+    needs: [security-scan, test-frontend]
+    outputs:
+      image-digest: ${{ steps.build.outputs.digest }}
+      image-tag: ${{ steps.meta.outputs.tags }}
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE_NAME }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=sha,prefix={{branch}}-
+          type=raw,value=latest,enable={{is_default_branch}}
+
+    - name: Build and push frontend image
+      id: build
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./Dockerfile.frontend
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        platforms: linux/amd64,linux/arm64
+
+  # Security scanning of built images
+  scan-images:
+    name: Scan Docker Images
+    runs-on: ubuntu-latest
+    needs: [build-backend, build-frontend]
+    strategy:
+      matrix:
+        image: [backend, frontend]
+    steps:
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: ${{ needs[format('build-{0}', matrix.image)].outputs.image-tag }}
+        format: 'sarif'
+        output: '${{ matrix.image }}-trivy-results.sarif'
+
+    - name: Upload Trivy scan results
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: '${{ matrix.image }}-trivy-results.sarif'
+
+  # Deploy to staging
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: [e2e-tests, build-backend, build-frontend, scan-images]
+    if: github.ref == 'refs/heads/develop'
+    environment:
+      name: staging
+      url: https://staging.fitness.example.com
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Helm
+      uses: azure/setup-helm@v4
+      with:
+        version: '3.12.0'
+
+    - name: Setup kubectl
+      uses: azure/setup-kubectl@v4
+      with:
+        version: '1.28.0'
+
+    - name: Configure kubectl
+      run: |
+        echo "${{ secrets.KUBECONFIG_STAGING }}" | base64 -d > kubeconfig
+        export KUBECONFIG=kubeconfig
+
+    - name: Deploy with Helm
+      run: |
+        helm upgrade --install fitness-tracker-staging \
+          ./src/deployment/helm/fitness-tracker \
+          --namespace fitness-tracker-staging \
+          --create-namespace \
+          --set image.backend.tag=${{ needs.build-backend.outputs.image-tag }} \
+          --set image.frontend.tag=${{ needs.build-frontend.outputs.image-tag }} \
+          --set env.NODE_ENV=staging \
+          --set ingress.hosts[0].host=staging.fitness.example.com \
+          --values ./src/deployment/helm/fitness-tracker/values-staging.yaml \
+          --wait --timeout=10m
+
+    - name: Run smoke tests
+      run: |
+        kubectl wait --for=condition=available --timeout=300s deployment/fitness-tracker-staging-backend -n fitness-tracker-staging
+        curl -f https://staging.fitness.example.com/health
+
+  # Deploy to production
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [deploy-staging]
+    if: github.ref == 'refs/heads/main'
+    environment:
+      name: production
+      url: https://fitness.example.com
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Helm
+      uses: azure/setup-helm@v4
+      with:
+        version: '3.12.0'
+
+    - name: Setup kubectl
+      uses: azure/setup-kubectl@v4
+      with:
+        version: '1.28.0'
+
+    - name: Configure kubectl
+      run: |
+        echo "${{ secrets.KUBECONFIG_PRODUCTION }}" | base64 -d > kubeconfig
+        export KUBECONFIG=kubeconfig
+
+    - name: Deploy with Helm (Blue-Green)
+      run: |
+        # Deploy to green environment
+        helm upgrade --install fitness-tracker-green \
+          ./src/deployment/helm/fitness-tracker \
+          --namespace fitness-tracker-production \
+          --create-namespace \
+          --set image.backend.tag=${{ needs.build-backend.outputs.image-tag }} \
+          --set image.frontend.tag=${{ needs.build-frontend.outputs.image-tag }} \
+          --set nameOverride=fitness-tracker-green \
+          --values ./src/deployment/helm/fitness-tracker/values-production.yaml \
+          --wait --timeout=15m
+
+    - name: Run production smoke tests
+      run: |
+        kubectl wait --for=condition=available --timeout=300s deployment/fitness-tracker-green-backend -n fitness-tracker-production
+        # Add comprehensive production smoke tests here
+
+    - name: Switch traffic to green
+      run: |
+        # Update ingress to point to green deployment
+        kubectl patch ingress fitness-tracker-ingress -n fitness-tracker-production \
+          --type='json' \
+          -p='[{"op": "replace", "path": "/spec/rules/0/http/paths/0/backend/service/name", "value": "fitness-tracker-green-backend"}]'
+
+    - name: Cleanup old deployment
+      run: |
+        # Remove old blue deployment after successful switch
+        helm uninstall fitness-tracker-blue -n fitness-tracker-production || true
+
+  # Notify on deployment completion
+  notify:
+    name: Notify Deployment Status
+    runs-on: ubuntu-latest
+    needs: [deploy-production]
+    if: always()
+    steps:
+    - name: Notify Slack
+      uses: 8398a7/action-slack@v3
+      with:
+        status: ${{ job.status }}
+        channel: '#deployments'
+        webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}

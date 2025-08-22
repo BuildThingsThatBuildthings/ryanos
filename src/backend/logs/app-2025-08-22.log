@@ -1,0 +1,51 @@
+{
+  message: 'Database connection successful',
+  level: 'info',
+  service: 'fitness-tracker-api',
+  timestamp: '2025-08-22 12:36:28'
+}
+{
+  message: 'Fitness Tracker API server running on port 3001 in development mode',
+  level: 'info',
+  service: 'fitness-tracker-api',
+  timestamp: '2025-08-22 12:36:28'
+}
+{
+  message: 'API Version: v1',
+  level: 'info',
+  service: 'fitness-tracker-api',
+  timestamp: '2025-08-22 12:36:28'
+}
+{
+  message: 'Health check: http://localhost:3001/health',
+  level: 'info',
+  service: 'fitness-tracker-api',
+  timestamp: '2025-08-22 12:36:28'
+}
+{
+  service: 'fitness-tracker-api',
+  requestId: '1c73115a-d1c8-4064-a426-7a94f0b19865',
+  method: 'GET',
+  url: '/health',
+  ip: '::1',
+  userAgent: 'curl/8.9.1',
+  contentType: undefined,
+  contentLength: undefined,
+  referer: undefined,
+  body: {},
+  level: 'info',
+  message: 'Incoming request',
+  timestamp: '2025-08-22 12:40:31'
+}
+{
+  service: 'fitness-tracker-api',
+  requestId: '1c73115a-d1c8-4064-a426-7a94f0b19865',
+  method: 'GET',
+  url: '/health',
+  statusCode: 200,
+  responseTime: '3ms',
+  contentLength: '102',
+  level: 'info',
+  message: 'Request completed',
+  timestamp: '2025-08-22 12:40:31'
+}

@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+
+  # Backend API
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+      target: production
+    container_name: fitness-tracker-backend
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      JWT_SECRET: ${JWT_SECRET:-dev-jwt-secret-change-in-production}
+      CORS_ORIGIN: http://localhost:3001
+      LOG_LEVEL: debug
+    volumes:
+      - ./backend:/app/backend:ro
+      - backend_logs:/app/logs
+    ports:
+      - "3000:3000"
+    networks:
+      - fitness-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Frontend Application
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+      target: production
+    container_name: fitness-tracker-frontend
+    environment:
+      VITE_API_BASE_URL: http://localhost:3000
+      VITE_APP_TITLE: Fitness Tracker
+      VITE_ENVIRONMENT: development
+    volumes:
+      - ./src:/app/src:ro
+    ports:
+      - "3001:8080"
+    depends_on:
+      - backend
+    networks:
+      - fitness-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+
+volumes:
+  backend_logs:
+    driver: local
+
+networks:
+  fitness-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
